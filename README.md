@@ -1,7 +1,11 @@
 # 🌟 L'Oréal Skin Analysis AI Web Application  
 
 An AI-powered skin analysis web application developed for the L'Oréal contest, utilizing cutting-edge technologies.  
-
+![Imgur](https://i.imgur.com/61KkWlf.png)
+![Imgur](https://i.imgur.com/V8b3FXa.png)
+![Imgur](https://i.imgur.com/6jFDSWO.png)
+![Imgur](https://i.imgur.com/TvDbze7.png)
+![Imgur](https://i.imgur.com/CZjnq2H.png)
 ## 🚀 Key Technologies  
 - **Backend**: Django, Python  
 - **Frontend**: HTML, JavaScript, Tailwind CSS  
