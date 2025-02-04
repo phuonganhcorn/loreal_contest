@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Skincare Companion</title>
+    <!-- Montserrat Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f6f8f9;
+            --text-primary: #000000;
+            --text-secondary: #333333;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--bg-secondary);
+        }
+
+        .hero-gradient {
+            background: linear-gradient(135deg, #fce7f3 0%, #ede9fe 100%);
+        }
+
+        .feature-card {
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .cta-button {
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            transition: all 0.3s ease;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div class="font-bold text-xl text-purple-600">AI Skincare</div>
+                <div class="space-x-6">
+                    <a href="#features" class="text-gray-600 hover:text-purple-600">Features</a>
+                    <a href="#how-it-works" class="text-gray-600 hover:text-purple-600">How It Works</a>
+                    <a href="{% url 'skincare:routine' %}" class="cta-button text-white px-6 py-2 rounded-full">Get Started</a>
+                    <a href="#" id="login-button" class="text-gray-600 hover:text-purple-600">Login</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4 transform transition-all scale-95">
+            <!-- Close button -->
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-semibold text-gray-800">Welcome Back</h3>
+                <button onclick="closeLoginModal()" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" method="POST" action="{% url 'skincare:login' %}" class="space-y-6">
+                {% csrf_token %}
+                <!-- Error Message Display -->
+                <div id="login-error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+                    <span class="block sm:inline">Invalid username or password.</span>
+                </div>
+
+                <!-- Email/Username Field -->
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700">Email or Username</label>
+                    <input type="text" id="username" name="username" required
+                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                </div>
+
+                <!-- Password Field -->
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="password" name="password" required
+                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                </div>
+
+                <!-- Remember Me Checkbox -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="remember-me" name="remember-me"
+                            class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                        <label for="remember-me" class="ml-2 block text-sm text-gray-700">Remember me</label>
+                    </div>
+                    <div class="text-sm">
+                        <a href="#" class="font-medium text-purple-600 hover:text-purple-500">Forgot password?</a>
+                    </div>
+                </div>
+
+                <!-- Login Button -->
+                <button type="submit"
+                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-pink-500 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                    Sign in
+                </button>
+            </form>
+
+            <!-- Register Link -->
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-600">
+                    Don't have an account?
+                    <a href="{% url 'skincare:register' %}" class="font-medium text-purple-600 hover:text-purple-500">
+                        Create one now
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Login Success Modal -->
+    <div id="login-success-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-10 max-w-md w-full mx-4 text-center transform transition-all duration-300 scale-95 hover:scale-100">
+            <div class="mb-6">
+                <svg class="mx-auto h-20 w-20 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <h2 class="text-3xl font-bold mb-4 text-gray-800">Login Successful!</h2>
+            <p class="text-gray-600 mb-6">Welcome back to your skincare journey.</p>
+            <div class="flex justify-center space-x-4">
+                <button onclick="closeSuccessModal()" 
+                    class="bg-gradient-to-r from-purple-600 to-pink-500 text-white 
+                        px-6 py-3 rounded-full 
+                        hover:opacity-90 
+                        transition duration-300">
+                    Continue to Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="hero-gradient bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800">
+        <div class="container mx-auto px-6 py-20">
+            <div class="flex flex-col md:flex-row items-center justify-between space-x-10">
+                <div class="md:w-1/2 mb-10 md:mb-0">
+                    <div class="mb-6 inline-block 
+                        bg-gradient-to-r from-purple-100 to-pink-100 
+                        text-purple-800 
+                        px-4 py-2 
+                        rounded-full 
+                        text-sm 
+                        font-medium 
+                        shadow-sm">
+                        AI-Powered Skincare Innovation
+                    </div>
+                    <h1 class="text-5xl font-bold mb-6 leading-tight 
+                        bg-gradient-to-r from-purple-600 to-pink-500 
+                        text-transparent bg-clip-text
+                        drop-shadow-lg 
+                        hover:scale-105 
+                        transition duration-300">
+                        Your Personal AI Skincare Companion
+                    </h1>
+                    <p class="text-xl text-gray-600 dark:text-gray-300 mb-8">
+                        Unlock personalized skincare insights with cutting-edge AI technology. Track your progress, receive tailored recommendations, and transform your skincare journey.
+                    </p>
+                    <div class="flex items-center space-x-6">
+                        <a href="{% url 'skincare:routine' %}" 
+                        class="bg-gradient-to-r from-purple-600 to-pink-500 text-white 
+                                px-10 py-4 rounded-full inline-block font-semibold 
+                                transform hover:scale-105 transition duration-300 
+                                shadow-lg hover:shadow-xl">
+                            Create Your Routine
+                        </a>
+                        <a href="#features" class="text-purple-600 hover:text-purple-800 
+                                                flex items-center space-x-2 
+                                                dark:text-purple-400 dark:hover:text-purple-300">
+                            <span>Learn More</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="w-1/2 relative group, h-[600px]">
+                    <div class="perspective-container w-[600px] h-[400px] transform transition-all duration-500 
+                                hover:scale-105 group-hover:scale-110">
+                        
+                        
+                                <div class="phone-3d-card 
+                                relative 
+                                z-10 
+                                transition-all 
+                                duration-500 
+                                transform 
+                                hover:scale-105 
+                                group 
+                                overflow-hidden 
+                                rounded-3xl">
+                            <a href="https://imgur.com/mReQZFS" class="block relative group">
+                                <div class="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 
+                                            rounded-3xl blur-sm opacity-50 group-hover:opacity-75 
+                                            transition-all duration-300"></div>
+                                
+                                <img src="https://i.imgur.com/mReQZFS.png" 
+                                        alt="Phone Case Design" 
+                                        class="w-full h-full object-cover rounded-3xl 
+                                            relative z-10 
+                                            border-2 border-white/50 dark:border-gray-800/50
+                                            shadow-lg group-hover:shadow-xl 
+                                            transition-all duration-300"
+                                        title="source: imgur.com" />
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <!-- Features Section -->
+    <div id="features" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-12">Key Features</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <!-- Feature 1: Personalized Routine -->
+                <div class="feature-card bg-white p-6 rounded-lg shadow-lg">
+                    <div class="text-purple-600 text-4xl mb-4">✨</div>
+                    <h3 class="text-xl font-semibold mb-3">Personalized Routine</h3>
+                    <p class="text-gray-600">Get AI-powered skincare routines tailored to your skin type and concerns.</p>
+                    <div class="flex justify-center items-center">
+                        <div class="mt-4 bg-purple-600 text-white px-8 py-3 rounded-full inline-block font-semibold 
+                        hover:bg-purple-700 transition duration-300 transform hover:scale-105">
+                            <a href="{% url 'skincare:routine' %}">
+                            Get Your Routine
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Feature 2: Progress Tracking -->
+                <div class="feature-card bg-white p-6 rounded-lg shadow-lg">
+                    <div class="text-purple-600 text-4xl mb-4">📅</div>
+                    <h3 class="text-xl font-semibold mb-3">Progress Tracking</h3>
+                    <p class="text-gray-600">Track your skincare journey with our interactive calendar and progress tools.</p>
+                    <div class="flex justify-center items-center">
+                        <div class="mt-4 bg-purple-600 text-white px-8 py-3 rounded-full inline-block font-semibold 
+                        hover:bg-purple-700 transition duration-300 transform hover:scale-105">
+                            <a href="{% url 'skincare:calendar' %}">
+                            Get Your Calendar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Feature 3: Smart Reminders -->
+                <div class="feature-card bg-white p-6 rounded-lg shadow-lg">
+                    <div class="text-purple-600 text-4xl mb-4">🔔</div>
+                    <h3 class="text-xl font-semibold mb-3">Smart Reminders</h3>
+                    <p class="text-gray-600">Never miss a skincare routine with customizable notifications for your laptop.</p>
+                    <div class="flex justify-center items-center">
+                        <div class="mt-4 bg-purple-600 text-white px-8 py-3 rounded-full inline-block font-semibold 
+                        hover:bg-purple-700 transition duration-300 transform hover:scale-105">
+                            <a href="{% url 'skincare:notifications' %}">
+                            Set Your Reminders
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Feature 4: AI Camera Skin Analysis -->
+                <div class="feature-card bg-white p-6 rounded-lg shadow-lg">
+                    <div class="text-purple-600 text-4xl mb-4">🔬</div>
+                    <h3 class="text-xl font-semibold mb-3">AI Skin Analysis</h3>
+                    <p class="text-gray-600">Analyze your skin condition instantly using advanced AI technology and camera.</p>
+                    <div class="flex justify-center items-center">
+                        <div class="mt-4 bg-purple-600 text-white px-8 py-3 rounded-full inline-block font-semibold 
+                        hover:bg-purple-700 transition duration-300 transform hover:scale-105">
+                            <a href="{% url 'skincare:skin_analysis' %}">
+                            Analyze Your Skin
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How It Works Section -->
+    <div id="how-it-works" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-12">How It Works</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-purple-600 mb-4">1</div>
+                    <h3 class="font-semibold mb-2">Create Profile</h3>
+                    <p class="text-gray-600">Tell us about your skin type and concerns</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-purple-600 mb-4">2</div>
+                    <h3 class="font-semibold mb-2">Get Recommendations</h3>
+                    <p class="text-gray-600">Receive AI-powered skincare routine</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-purple-600 mb-4">3</div>
+                    <h3 class="font-semibold mb-2">Follow Your Plan</h3>
+                    <p class="text-gray-600">Start your personalized skincare journey</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-purple-600 mb-4">4</div>
+                    <h3 class="font-semibold mb-2">Track Progress</h3>
+                    <p class="text-gray-600">Monitor your skin's improvement</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="bg-purple-600 text-white py-16">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-3xl font-bold mb-4">Ready to Transform Your Skincare Routine?</h2>
+            <p class="mb-8 text-lg">Join thousands of users who have already discovered their perfect skincare routine.</p>
+            <a href="{% url 'skincare:routine' %}" class="bg-white text-purple-600 px-8 py-3 rounded-full inline-block font-semibold hover:bg-gray-100 transition duration-300">
+                Get Started Now
+            </a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-10">
+        <div class="container mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between">
+                <div class="mb-6 md:mb-0">
+                    <h3 class="font-bold text-xl mb-4">AI Skincare</h3>
+                    <p class="text-gray-400">Your personal skincare assistant</p>
+                </div>
+                <div class="flex space-x-12">
+                    <div>
+                        <h4 class="font-semibold mb-4">Features</h4>
+                        <ul class="text-gray-400">
+                            <li class="mb-2"><a href="{% url 'skincare:routine' %}" class="hover:text-white">Personalization</a></li>
+                            <li class="mb-2"><a href="{% url 'skincare:calendar' %}" class="hover:text-white">Progress Tracking</a></li>
+                            <li class="mb-2"><a href="{% url 'skincare:notifications' %}" class="hover:text-white">Smart Reminders</a></li>
+                            <li class="mb-2"><a href="{% url 'skincare:skin_analysis' %}" class="hover:text-white">AI Skin Analysis</a></li>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-4">Contact</h4>
+                        <ul class="text-gray-400">
+                            <li class="mb-2"><a href="#" class="hover:text-white">Support</a></li>
+                            <li class="mb-2"><a href="#" class="hover:text-white">FAQ</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 AI Skincare. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Add this JavaScript code at the end of your body tag -->
+    <script>
+        // Get DOM elements
+        const loginButton = document.getElementById('login-button');
+        const loginModal = document.getElementById('login-modal');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+
+        // Show login modal when login button is clicked
+        loginButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            loginModal.classList.remove('hidden');
+            // Force a reflow to ensure the transition works
+            loginModal.offsetHeight;
+            // Add animation classes
+            loginModal.querySelector('div').classList.remove('scale-95');
+            loginModal.querySelector('div').classList.add('scale-100');
+        });
+
+        // Close modal function
+        function closeLoginModal() {
+            // Add fade-out animation
+            loginModal.querySelector('div').classList.remove('scale-100');
+            loginModal.querySelector('div').classList.add('scale-95');
+            
+            // Hide modal after animation
+            setTimeout(() => {
+                loginModal.classList.add('hidden');
+                // Reset form
+                loginForm.reset();
+                loginError.classList.add('hidden');
+            }, 200);
+        }
+
+        function showLoginSuccessModal() {
+            const loginModal = document.getElementById('login-modal');
+            const successModal = document.getElementById('login-success-modal');
+            
+            // Hide login modal
+            loginModal.classList.add('hidden');
+            
+            // Show success modal
+            successModal.classList.remove('hidden');
+        }
+
+        // Function to close success modal
+        function closeSuccessModal() {
+            const successModal = document.getElementById('login-success-modal');
+            successModal.classList.add('hidden');
+            
+            // Redirect to dashboard or desired page
+            window.location.href = "{% url 'skincare:home' %}";
+        }
+
+        // Close modal when clicking outside
+        loginModal.addEventListener('click', function(e) {
+            if (e.target === loginModal) {
+                closeLoginModal();
+            }
+        });
+
+        // Handle form submission
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            try {
+                const formData = new FormData(loginForm);
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                
+                const response = await fetch('{% url "skincare:login" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                    mode: 'same-origin',
+                    credentials: 'include',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    loginError.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                loginError.classList.remove('hidden');
+            }
+        });
+
+        // Add escape key listener to close modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !loginModal.classList.contains('hidden')) {
+                closeLoginModal();
+            }
+        });
+    </script>
+</body>
+</html> 

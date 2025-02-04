@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Skincare - Notifications</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f6f8f9;
+            --text-primary: #000000;
+            --text-secondary: #333333;
+        }
+
+        .dark-mode {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --text-primary: #ffffff;
+            --text-secondary: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, #fce7f3 0%, #ede9fe 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .dark-mode body {
+            background: linear-gradient(135deg, #2d1b2d 0%, #1a1a2e 100%);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-mode .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .time-picker {
+            appearance: none;
+            background: transparent;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            color: inherit;
+        }
+
+        .dark-mode .time-picker {
+            border-color: #4a5568;
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <button onclick="toggleTheme()" class="theme-toggle p-2 rounded-full bg-white dark:bg-gray-800 shadow-lg">
+        <svg id="theme-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z">
+            </path>
+        </svg>
+    </button>
+
+    <!-- Navigation -->
+    <nav class="bg-white dark:bg-gray-800 shadow-sm">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="{% url 'skincare:home' %}" class="font-bold text-xl text-purple-600 dark:text-purple-400">
+                    AI Skincare
+                </a>
+                <div class="space-x-6">
+                    <a href="{% url 'skincare:routine' %}" 
+                        class="text-purple-600 dark:text-purple-400 font-semibold">Routine</a>
+                    <a href="{% url 'skincare:calendar' %}" 
+                        class="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400">Calendar</a>
+                    <a href ="{% url 'skincare:skin_analysis' %}" 
+                        class="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400">Skincare Analysis</a>
+                    <a href="{% url 'skincare:notifications' %}" 
+                        class="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400">Notifications</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-12">
+        <div class="flex justify-center items-center">
+            <h1 class="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 inline-block text-transparent bg-clip-text">
+                Notification Settings
+            </h1>
+        </div>
+
+        <div class="glass-card p-8 max-w-3xl mx-auto">
+            <!-- Enable Notifications -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-semibold dark:text-white">Enable Notifications</h2>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="notifications-toggle" class="sr-only peer" onchange="toggleNotifications()">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer 
+                            dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white 
+                            after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white 
+                            after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 
+                            after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+                    </label>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400 mt-2">
+                    Receive reminders for your morning and evening skincare routines
+                </p>
+            </div>
+
+            <!-- Reminder Times -->
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-xl font-semibold mb-4 dark:text-white">Morning Routine Reminder</h3>
+                    <div class="flex items-center space-x-4">
+                        <input type="time" id="morning-time" class="time-picker" value="08:00" onchange="updateReminderTime('morning')">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="morning-enabled" class="mr-2" checked onchange="toggleReminder('morning')">
+                            <span class="dark:text-gray-300">Enable</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold mb-4 dark:text-white">Evening Routine Reminder</h3>
+                    <div class="flex items-center space-x-4">
+                        <input type="time" id="evening-time" class="time-picker" value="20:00" onchange="updateReminderTime('evening')">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="evening-enabled" class="mr-2" checked onchange="toggleReminder('evening')">
+                            <span class="dark:text-gray-300">Enable</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Preview -->
+            <div class="mt-8">
+                <h3 class="text-xl font-semibold mb-4 dark:text-white">Notification Preview</h3>
+                <button onclick="showNotificationPreview()" 
+                    class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition duration-300">
+                    Test Notification
+                </button>
+            </div>
+
+            <!-- Save Settings -->
+            <div class="mt-8">
+                <button onclick="saveSettings()" 
+                    class="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 rounded-lg 
+                    font-semibold transform hover:scale-105 transition duration-300 shadow-lg">
+                    Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme Toggle Function
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark-mode');
+            const isDark = document.documentElement.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const isDark = document.documentElement.classList.contains('dark-mode');
+            const icon = document.getElementById('theme-icon');
+            icon.innerHTML = isDark ? 
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>' :
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>';
+        }
+
+        // Notification Functions
+        async function toggleNotifications() {
+            if (!("Notification" in window)) {
+                alert("This browser does not support notifications");
+                return;
+            }
+
+            const permission = await Notification.requestPermission();
+            const toggle = document.getElementById('notifications-toggle');
+            
+            if (permission === "granted") {
+                toggle.checked = true;
+                localStorage.setItem('notifications-enabled', 'true');
+            } else {
+                toggle.checked = false;
+                localStorage.setItem('notifications-enabled', 'false');
+            }
+        }
+
+        function updateReminderTime(period) {
+            const time = document.getElementById(`${period}-time`).value;
+            localStorage.setItem(`${period}-reminder-time`, time);
+            scheduleReminder(period);
+        }
+
+        function toggleReminder(period) {
+            const enabled = document.getElementById(`${period}-enabled`).checked;
+            localStorage.setItem(`${period}-reminder-enabled`, enabled);
+            if (enabled) {
+                scheduleReminder(period);
+            }
+        }
+
+        function scheduleReminder(period) {
+            const enabled = document.getElementById(`${period}-enabled`).checked;
+            const time = document.getElementById(`${period}-time`).value;
+            
+            if (!enabled) return;
+
+            const [hours, minutes] = time.split(':');
+            const now = new Date();
+            const reminderTime = new Date();
+            reminderTime.setHours(parseInt(hours), parseInt(minutes), 0);
+
+            if (reminderTime < now) {
+                reminderTime.setDate(reminderTime.getDate() + 1);
+            }
+
+            const delay = reminderTime - now;
+            setTimeout(() => {
+                showNotification(`Time for your ${period} skincare routine!`);
+                scheduleReminder(period); // Reschedule for next day
+            }, delay);
+        }
+
+        function showNotification(message) {
+            if (Notification.permission === "granted") {
+                new Notification("AI Skincare Reminder", {
+                    body: message,
+                    icon: "/path/to/your/icon.png" // Add your icon path
+                });
+            }
+        }
+
+        function showNotificationPreview() {
+            showNotification("This is how your notification will look!");
+        }
+
+        function saveSettings() {
+            const settings = {
+                notificationsEnabled: document.getElementById('notifications-toggle').checked,
+                morningTime: document.getElementById('morning-time').value,
+                morningEnabled: document.getElementById('morning-enabled').checked,
+                eveningTime: document.getElementById('evening-time').value,
+                eveningEnabled: document.getElementById('evening-enabled').checked
+            };
+
+            localStorage.setItem('notification-settings', JSON.stringify(settings));
+            
+            // Visual feedback
+            const saveButton = event.target;
+            const originalText = saveButton.textContent;
+            saveButton.textContent = "Settings Saved!";
+            setTimeout(() => {
+                saveButton.textContent = originalText;
+            }, 2000);
+
+            // Reschedule reminders
+            if (settings.morningEnabled) scheduleReminder('morning');
+            if (settings.eveningEnabled) scheduleReminder('evening');
+        }
+
+        // Initialize
+        function initializeSettings() {
+            const savedSettings = JSON.parse(localStorage.getItem('notification-settings') || '{}');
+            const savedTheme = localStorage.getItem('theme') || 'light';
+
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            }
+            updateThemeIcon();
+
+            // Restore saved settings
+            if (savedSettings.notificationsEnabled) {
+                document.getElementById('notifications-toggle').checked = true;
+            }
+            if (savedSettings.morningTime) {
+                document.getElementById('morning-time').value = savedSettings.morningTime;
+            }
+            if (savedSettings.eveningTime) {
+                document.getElementById('evening-time').value = savedSettings.eveningTime;
+            }
+            document.getElementById('morning-enabled').checked = savedSettings.morningEnabled !== false;
+            document.getElementById('evening-enabled').checked = savedSettings.eveningEnabled !== false;
+
+            // Schedule reminders
+            if (savedSettings.morningEnabled) scheduleReminder('morning');
+            if (savedSettings.eveningEnabled) scheduleReminder('evening');
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initializeSettings);
+    </script>
+</body>
+</html> 

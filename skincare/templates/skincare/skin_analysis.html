@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Skincare - Skin Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f6f8f9;
+            --text-primary: #000000;
+            --text-secondary: #333333;
+        }
+        .dark-mode {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --text-primary: #ffffff;
+            --text-secondary: #e0e0e0;
+        }
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, #fce7f3 0%, #ede9fe 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .dark-mode body {
+            background: linear-gradient(135deg, #2d1b2d 0%, #1a1a2e 100%);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .dark-mode .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .image-upload-preview {
+            max-height: 300px;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <button onclick="toggleTheme()" class="theme-toggle p-2 rounded-full bg-white dark:bg-gray-800 shadow-lg">
+        <svg id="theme-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"  
+                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z">
+            </path>
+        </svg>
+    </button>
+
+    <!-- Navigation -->
+    <nav class="bg-white dark:bg-gray-800 shadow-sm">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="{% url 'skincare:home' %}" class="font-bold text-xl text-purple-600 dark:text-purple-400">
+                    AI Skincare
+                </a>
+                <div class="space-x-6">
+                    <a href="{% url 'skincare:routine' %}"  
+                        class="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400">Routine</a>
+                    <a href="{% url 'skincare:calendar' %}"  
+                        class="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400">Calendar</a>
+                    <a href="{% url 'skincare:skin_analysis' %}"  
+                        class="text-purple-600 dark:text-purple-400 font-semibold">Skincare Analysis</a>
+                    <a href="{% url 'skincare:notifications' %}"  
+                        class="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400">Notifications</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-12">
+        <div class="flex justify-center items-center">
+            <h1 class="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 inline-block text-transparent bg-clip-text">
+                AI Skin Analysis
+            </h1>
+        </div>
+        
+        <div class="glass-card p-8 max-w-3xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Upload Skin Image
+                    </label>
+                    <input 
+                        type="file" 
+                        id="skin-analysis-upload" 
+                        accept="image/*" 
+                        onchange="previewSkinAnalysisImage(event)"
+                        class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg 
+                        focus:ring-purple-500 focus:border-purple-500 
+                        bg-white dark:bg-gray-700 
+                        text-gray-900 dark:text-white"
+                    >
+                    <img 
+                        id="skin-analysis-preview" 
+                        class="mt-4 max-w-full rounded-lg hidden image-upload-preview" 
+                        alt="Image Preview"
+                    >
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Capture Instructions
+                    </label>
+                    <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                        <p>• Use natural, well-lit environment</p>
+                        <p>• Take a clear, close-up photo of your face</p>
+                        <p>• Avoid makeup or heavy filters</p>
+                        <p>• Ensure even lighting on your face</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 text-center">
+                <button 
+                    onclick="performSkinAnalysis()" 
+                    class="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-8 py-3 rounded-full 
+                    font-semibold transform hover:scale-105 transition duration-300 shadow-lg"
+                >
+                    Analyze My Skin
+                </button>
+            </div>
+
+            <div 
+                id="skin-analysis-result" 
+                class="mt-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-inner hidden"
+            >
+                <!-- Analysis results will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme Toggle Function (same as previous template)
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark-mode');
+            const isDark = document.documentElement.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const isDark = document.documentElement.classList.contains('dark-mode');
+            const icon = document.getElementById('theme-icon');
+            icon.innerHTML = isDark ?  
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>' :
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>';
+        }
+
+        // Check saved theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+            document.documentElement.classList.add('dark-mode');
+        }
+        updateThemeIcon();
+
+        // Image Preview Function
+        function previewSkinAnalysisImage(event) {
+            const imagePreview = document.getElementById('skin-analysis-preview');
+            const file = event.target.files[0];
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.src = '';
+                imagePreview.classList.add('hidden');
+            }
+        }
+
+        // Skin Analysis Function
+        async function performSkinAnalysis() {
+            const imageInput = document.getElementById('skin-analysis-upload');
+            const analysisResult = document.getElementById('skin-analysis-result');
+            
+            // Check if an image is selected
+            if (!imageInput.files || imageInput.files.length === 0) {
+                analysisResult.innerHTML = `
+                    <div class="text-red-600 dark:text-red-400">
+                        Please select an image to analyze.
+                    </div>
+                `;
+                analysisResult.classList.remove('hidden');
+                return;
+            }
+
+            // Prepare form data
+            const formData = new FormData();
+            formData.append('image', imageInput.files[0]);
+
+            // Show loading state
+            analysisResult.innerHTML = `
+                <div class="flex justify-center items-center">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                    <span class="ml-2 dark:text-white">Analyzing your skin...</span>
+                </div>
+            `;
+            analysisResult.classList.remove('hidden');
+
+            try {
+                // Send image to server for analysis
+                const response = await fetch('{% url "skincare:analyze_skin" %}', {
+                    method: 'POST',
+                    // headers: {
+                    //     'X-CSRFToken': getCookie('csrftoken')
+                    // },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                // Handle successful analysis
+                if (data.success) {
+                    displaySkinAnalysisResults(data.analysis);
+                } else {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+            } catch (error) {
+                // Handle errors
+                analysisResult.innerHTML = `
+                    <div class="text-red-600 dark:text-red-400">
+                        ${error.message || 'An unexpected error occurred during skin analysis.'}
+                    </div>
+                `;
+                console.error('Skin Analysis Error:', error);
+            }
+        }
+
+        function displaySkinAnalysisResults(analysis) {
+            const analysisResult = document.getElementById('skin-analysis-result');
+            
+            analysisResult.innerHTML = `
+                <div>
+                    <h3 class="text-2xl font-semibold mb-4 dark:text-white">Skin Analysis Results</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="font-semibold text-lg dark:text-gray-300">Skin Type</h4>
+                            <p class="text-gray-700 dark:text-gray-400">${analysis.skin_type || 'Not determined'}</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-semibold text-lg dark:text-gray-300">Confidence Score</h4>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                                <div class="bg-purple-600 h-2.5 rounded-full" 
+                                     style="width: ${(analysis.confidence_score || 0) * 100}%">
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                ${((analysis.confidence_score || 0) * 100).toFixed(2)}% Confidence
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h4 class="font-semibold text-lg mb-2 dark:text-gray-300">Detected Concerns</h4>
+                        <div class="flex flex-wrap gap-2">
+                            ${(analysis.concerns || []).map(concern => `
+                                <span class="bg-purple-100 text-purple-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-purple-900 dark:text-purple-300">
+                                    ${concern}
+                                </span>
+                            `).join('') || '<p class="text-gray-600 dark:text-gray-400">No specific concerns detected</p>'}
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h4 class="font-semibold text-lg mb-2 dark:text-gray-300">Recommendations</h4>
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <p class="text-gray-700 dark:text-gray-300">${analysis.recommendations || 'No specific recommendations'}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // CSRF Cookie retrieval function
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

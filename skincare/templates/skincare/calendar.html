@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Skincare - Calendar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f6f8f9;
+            --text-primary: #000000;
+            --text-secondary: #333333;
+        }
+
+        .dark-mode {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --text-primary: #ffffff;
+            --text-secondary: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, #fce7f3 0%, #ede9fe 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .dark-mode body {
+            background: linear-gradient(135deg, #2d1b2d 0%, #1a1a2e 100%);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-mode .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            border-radius: 10px;
+            transition: transform 0.3s ease;
+        }
+
+        .calendar-day:hover {
+            transform: scale(1.05);
+        }
+
+        .completed {
+            border: 2px solid #10B981;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .checkbox-container {
+            position: relative;
+            cursor: pointer;
+            font-size: 22px;
+            user-select: none;
+        }
+
+        .checkbox-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .checkmark {
+            position: relative;
+            height: 24px;
+            width: 24px;
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            border: 2px solid transparent;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(236, 72, 153, 0.2);
+        }
+
+        .checkbox-container:hover input ~ .checkmark {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(236, 72, 153, 0.3);
+        }
+
+        .checkbox-container input:checked ~ .checkmark {
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            border-color: transparent;
+        }
+
+        .checkmark:after {
+            content: '';
+            position: absolute;
+            display: none;
+            left: 8px;
+            top: 4px;
+            width: 6px;
+            height: 12px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .checkbox-container input:checked ~ .checkmark:after {
+            display: block;
+            animation: checkmark 0.2s ease-in-out forwards;
+        }
+
+        @keyframes checkmark {
+            0% {
+                opacity: 0;
+                transform: rotate(45deg) scale(0.5);
+            }
+            100% {
+                opacity: 1;
+                transform: rotate(45deg) scale(1);
+            }
+        }
+
+        .animate-float {
+            animation: float 1s ease-out forwards;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+        }
+
+        .completion-section {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.98) 100%);
+            padding: 1rem;
+            border-radius: 12px;
+            margin: -1rem -1rem 1rem -1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            z-index: 10;
+            backdrop-filter: blur(8px);
+        }
+
+        .dark-mode .completion-section {
+            background: linear-gradient(135deg, rgba(31,41,55,0.95) 0%, rgba(31,41,55,0.98) 100%);
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <button onclick="toggleTheme()" class="theme-toggle p-2 rounded-full bg-white dark:bg-gray-800 shadow-lg">
+        <svg id="theme-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z">
+            </path>
+        </svg>
+    </button>
+
+    <!-- Navigation -->
+    <nav class="bg-white dark:bg-gray-800 shadow-sm">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <a href="{% url 'skincare:home' %}" class="font-bold text-xl text-purple-600 dark:text-purple-400">
+                    AI Skincare
+                </a>
+                <div class="space-x-6">
+                    <a href="{% url 'skincare:routine' %}" 
+                        class="text-purple-600 dark:text-purple-400 font-semibold">Routine</a>
+                    <a href="{% url 'skincare:calendar' %}" 
+                        class="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400">Calendar</a>
+                    <a href ="{% url 'skincare:skin_analysis' %}" 
+                        class="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400">Skincare Analysis</a>
+                    <a href="{% url 'skincare:notifications' %}" 
+                        class="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400">Notifications</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-12">
+        <div class="flex justify-center items-center">
+            <h1 class="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 inline-block text-transparent bg-clip-text">
+                Create Your Skincare Calendar
+            </h1>
+        </div>
+        <div class="glass-card p-8 max-w-2xl mx-auto mb-8">
+            <h2 class="text-2xl font-semibold mb-6 text-purple-600 dark:text-purple-400">Your Skin Profile</h2>
+            
+            <form id="skinProfile" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Age</label>
+                        <input type="number" name="age" id="age" required
+                            class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 
+                            bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Skin Type</label>
+                        <select name="skinType" id="skin-type" required
+                            class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 
+                            bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                            <option value="">Select skin type</option>
+                            <option value="oily">Oily</option>
+                            <option value="dry">Dry</option>
+                            <option value="combination">Combination</option>
+                            <option value="normal">Normal</option>
+                            <option value="sensitive">Sensitive</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Concerns</label>
+                        <select name="concerns" id="concerns" multiple required
+                            class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 
+                            bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                            <option value="acne">Acne</option>
+                            <option value="aging">Aging</option>
+                            <option value="pigmentation">Pigmentation</option>
+                            <option value="dryness">Dryness</option>
+                            <option value="sensitivity">Sensitivity</option>
+                            <option value="redness">Redness</option>
+                        </select>
+                        <small class="text-gray-500 dark:text-gray-400">Hold Ctrl/Cmd to select multiple</small>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Climate</label>
+                        <select name="climate" id="climate" required
+                            class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 
+                            bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                            <option value="">Select climate</option>
+                            <option value="tropical">Tropical</option>
+                            <option value="dry">Dry</option>
+                            <option value="temperate">Temperate</option>
+                            <option value="cold">Cold</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="glass-card p-8 max-w-5xl mx-auto">
+            <!-- Month Navigation -->
+            <div class="flex justify-between items-center mb-8">
+                <button onclick="previousMonth()" 
+                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <h2 id="current-month" class="text-2xl font-semibold dark:text-white">March 2024</h2>
+                <button onclick="nextMonth()" 
+                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Weekday Headers -->
+            <div class="calendar-grid mb-4">
+                <div class="text-center font-semibold text-gray-600 dark:text-gray-400">Sun</div>
+                <div class="text-center font-semibold text-gray-600 dark:text-gray-400">Mon</div>
+                <div class="text-center font-semibold text-gray-600 dark:text-gray-400">Tue</div>
+                <div class="text-center font-semibold text-gray-600 dark:text-gray-400">Wed</div>
+                <div class="text-center font-semibold text-gray-600 dark:text-gray-400">Thu</div>
+                <div class="text-center font-semibold text-gray-600 dark:text-gray-400">Fri</div>
+                <div class="text-center font-semibold text-gray-600 dark:text-gray-400">Sat</div>
+            </div>
+
+            <!-- Add this button right after the month navigation and before the calendar grid -->
+            <div class="flex justify-center mb-8">
+                <button onclick="generateMonthlyRoutine()" 
+                    class="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-8 py-3 rounded-full 
+                    font-semibold transform hover:scale-105 transition duration-300 shadow-lg flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                            d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                    </svg>
+                    Generate Monthly Routine
+                </button>
+            </div>
+
+            <!-- Add loading overlay -->
+            <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                    <p class="text-lg dark:text-white">Generating routines for all days...</p>
+                    <p id="generation-progress" class="text-sm text-gray-600 dark:text-gray-400 mt-2">0/30 days completed</p>
+                </div>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div id="calendar-grid" class="calendar-grid">
+                <!-- Calendar days will be inserted here by JavaScript -->
+            </div>
+
+            <!-- Updated Routine Modal -->
+            <div id="routine-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-4xl w-full mx-4">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 id="modal-date" class="text-2xl font-semibold dark:text-white"></h3>
+                        <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Skincare Routine Box -->
+                        <div class="glass-card p-6">
+                            <h4 class="text-xl font-semibold mb-4 text-purple-600 dark:text-purple-400">Daily Skincare Routine</h4>
+                            
+                            <!-- Morning Routine -->
+                            <div class="mb-4">
+                                <div class="flex items-center mb-2">
+                                    <svg class="w-5 h-5 text-yellow-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                    </svg>
+                                    <h5 class="font-semibold dark:text-white">Morning Routine (6:00 - 9:00)</h5>
+                                </div>
+                                <div id="morning-routine" class="pl-7 space-y-2 text-gray-600 dark:text-gray-300">
+                                    <!-- AI-generated morning routine steps will be inserted here -->
+                                    <div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-3/4 rounded"></div>
+                                </div>
+                            </div>
+
+                            <!-- Noon Routine -->
+                            <div class="mb-4">
+                                <div class="flex items-center mb-2">
+                                    <svg class="w-5 h-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                    </svg>
+                                    <h5 class="font-semibold dark:text-white">Noon Routine (12:00 - 14:00)</h5>
+                                </div>
+                                <div id="noon-routine" class="pl-7 space-y-2 text-gray-600 dark:text-gray-300">
+                                    <!-- AI-generated noon routine steps will be inserted here -->
+                                    <div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-3/4 rounded"></div>
+                                </div>
+                            </div>
+
+                            <!-- Night Routine -->
+                            <div class="mb-4">
+                                <div class="flex items-center mb-2">
+                                    <svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                                    </svg>
+                                    <h5 class="font-semibold dark:text-white">Night Routine (19:00 - 22:00)</h5>
+                                </div>
+                                <div id="night-routine" class="pl-7 space-y-2 text-gray-600 dark:text-gray-300">
+                                    <!-- AI-generated night routine steps will be inserted here -->
+                                    <div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-3/4 rounded"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Diet Recommendations Box -->
+                        <div class="glass-card p-6">
+                            <h4 class="text-xl font-semibold mb-4 text-purple-600 dark:text-purple-400">Diet Recommendations</h4>
+                            <div id="diet-recommendations" class="space-y-4">
+                                <!-- AI-generated diet recommendations will be inserted here -->
+                                <div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-3/4 rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="completion-section">
+                        <label class="checkbox-container flex items-center justify-center space-x-3 cursor-pointer">
+                            <input type="checkbox" id="routine-checkbox" onchange="handleRoutineCompletion(event)" class="hidden">
+                            <span class="checkmark"></span>
+                            <span class="text-lg font-semibold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+                                Complete Today's Routine!
+                            </span>
+                        </label>
+                    </div>
+
+                    <!-- Add praise message modal -->
+                    <div id="praise-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+                        <div class="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4 relative">
+                            <div class="text-center">
+                                <div class="text-4xl mb-4">🌸</div>
+                                <p id="praise-message" class="text-lg text-gray-700 dark:text-gray-300 mb-4"></p>
+                                <button onclick="closePraiseModal()" 
+                                    class="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-2 rounded-lg 
+                                    hover:opacity-90 transition duration-300">
+                                    Thanks! 💪
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentDate = new Date();
+        let selectedDate = null;
+        const routineProgress = JSON.parse(localStorage.getItem('routineProgress') || '{}');
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark-mode');
+            const isDark = document.documentElement.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const isDark = document.documentElement.classList.contains('dark-mode');
+            const icon = document.getElementById('theme-icon');
+            icon.innerHTML = isDark ? 
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>' :
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>';
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+
+            const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+            
+            // Update month display
+            document.getElementById('current-month').textContent = 
+                firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            // Fill in empty days
+            for (let i = 0; i < firstDay.getDay(); i++) {
+                const emptyDay = document.createElement('div');
+                grid.appendChild(emptyDay);
+            }
+
+            // Fill in calendar days
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const dayElement = document.createElement('div');
+                const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${day}`;
+                const isCompleted = routineProgress[dateKey]?.completed;
+                
+                dayElement.className = `calendar-day p-2 bg-white dark:bg-gray-800 shadow cursor-pointer 
+                    ${isCompleted ? 'border-pink-300 border-2' : ''}`;
+
+                // Preview content
+                const savedRecommendations = localStorage.getItem(`recommendations_${dateKey}`);
+                let previewContent = '';
+                if (savedRecommendations) {
+                    const data = JSON.parse(savedRecommendations);
+                    previewContent = `
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            ${data.morning?.[0]?.substring(0, 20)}...
+                        </div>
+                    `;
+                }
+
+                dayElement.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">${day}</span>
+                        ${isCompleted ? `
+                            <span class="text-pink-500">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 3a7 7 0 100 14 7 7 0 000-14zm3.707 6.707a1 1 0 00-1.414-1.414L9 11.586 7.707 10.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            </span>
+                        ` : `
+                            <label class="checkbox-container">
+                                <input type="checkbox" onchange="markDayComplete('${dateKey}', this)">
+                                <span class="checkmark"></span>
+                            </label>
+                        `}
+                    </div>
+                    ${previewContent}
+                `;
+
+                dayElement.onclick = (e) => {
+                    // Prevent checkbox click from triggering the modal
+                    if (e.target.type !== 'checkbox') {
+                        showRoutine(day);
+                    }
+                };
+                grid.appendChild(dayElement);
+            }
+        }
+
+        async function loadUserProfile() {
+            const form = document.getElementById('skinProfile');
+            const formData = new FormData(form);
+            
+            const profile = {
+                age: formData.get('age'),
+                skinType: formData.get('skinType'),
+                concerns: Array.from(formData.getAll('concerns')),
+                climate: formData.get('climate')
+            };
+
+            // Validate that all required fields are filled
+            if (!profile.age || !profile.skinType || !profile.concerns.length || !profile.climate) {
+                throw new Error('Please fill in all profile fields before generating routines');
+            }
+
+            return profile;
+        }
+
+        async function generateAIRecommendations(date) {
+            try {
+                const userProfile = await loadUserProfile();
+
+                // Show loading state
+                document.getElementById('morning-routine').innerHTML = '<div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-3/4 rounded"></div>';
+                document.getElementById('noon-routine').innerHTML = '<div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-3/4 rounded"></div>';
+                document.getElementById('night-routine').innerHTML = '<div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-3/4 rounded"></div>';
+                document.getElementById('diet-recommendations').innerHTML = '<div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-3/4 rounded"></div>';
+
+                const response = await fetch('/api/generate-routine/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        date: date.toISOString().split('T')[0],
+                        profile: userProfile
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Format and display the recommendations
+                    document.getElementById('morning-routine').innerHTML = formatRoutine(data.morning_routine);
+                    document.getElementById('noon-routine').innerHTML = formatRoutine(data.noon_routine);
+                    document.getElementById('night-routine').innerHTML = formatRoutine(data.night_routine);
+                    document.getElementById('diet-recommendations').innerHTML = formatDiet(data.diet_recommendations);
+
+                    // Save to localStorage
+                    const dateKey = date.toISOString().split('T')[0];
+                    localStorage.setItem(`recommendations_${dateKey}`, JSON.stringify({
+                        morning: data.morning_routine,
+                        noon: data.noon_routine,
+                        night: data.night_routine,
+                        diet: data.diet_recommendations
+                    }));
+                } else {
+                    throw new Error(data.error || 'Failed to generate recommendations');
+                }
+            } catch (error) {
+                console.error('Error generating recommendations:', error);
+                showError(error.message);
+            }
+        }
+
+        function formatRoutine(steps) {
+            return steps.map(step => `
+                <div class="flex items-center">
+                    <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span>${step}</span>
+                </div>
+            `).join('');
+        }
+
+        function formatDiet(recommendations) {
+            if (!Array.isArray(recommendations)) {
+                // If recommendations is a string, split it into lines
+                recommendations = recommendations.split('\n').filter(line => line.trim());
+                // Convert each line into an object with food and reason
+                recommendations = recommendations.map(line => {
+                    const parts = line.split(':');
+                    return {
+                        food: parts[0]?.trim() || '',
+                        reason: parts[1]?.trim() || ''
+                    };
+                });
+            }
+
+            return recommendations.map(item => `
+                <div class="mb-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div class="font-semibold text-purple-600 dark:text-purple-400 flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+                        </svg>
+                        ${item.food}
+                    </div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300 ml-6">
+                        ${item.reason}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showError(message) {
+            const errorMessage = `
+                <div class="text-red-500 dark:text-red-400">
+                    <p>${message}</p>
+                </div>
+            `;
+            document.getElementById('morning-routine').innerHTML = errorMessage;
+            document.getElementById('noon-routine').innerHTML = errorMessage;
+            document.getElementById('night-routine').innerHTML = errorMessage;
+            document.getElementById('diet-recommendations').innerHTML = errorMessage;
+        }
+
+        async function regenerateRecommendations() {
+            if (!selectedDate) {
+                console.error('No date selected');
+                return;
+            }
+
+            console.log('Regenerating recommendations for:', selectedDate);
+            
+            try {
+                await generateAIRecommendations(selectedDate);
+                console.log('Recommendations regenerated successfully');
+            } catch (error) {
+                console.error('Error in regenerateRecommendations:', error);
+                showError('Failed to regenerate recommendations. Please try again.');
+            }
+        }
+
+        async function showRoutine(day) {
+            selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+            const dateKey = selectedDate.toISOString().split('T')[0];
+            
+            document.getElementById('modal-date').textContent = 
+                selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+            // Update checkbox state based on saved progress
+            const checkbox = document.getElementById('routine-checkbox');
+            checkbox.checked = routineProgress[dateKey]?.completed || false;
+
+            // Show loading state
+            document.getElementById('morning-routine').innerHTML = '<div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-3/4 rounded"></div>';
+            document.getElementById('noon-routine').innerHTML = '<div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-3/4 rounded"></div>';
+            document.getElementById('night-routine').innerHTML = '<div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-3/4 rounded"></div>';
+            document.getElementById('diet-recommendations').innerHTML = '<div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-3/4 rounded"></div>';
+
+            document.getElementById('routine-modal').classList.remove('hidden');
+
+            // Try to load existing recommendations first
+            const savedRecommendations = localStorage.getItem(`recommendations_${dateKey}`);
+            if (savedRecommendations) {
+                const recommendations = JSON.parse(savedRecommendations);
+                document.getElementById('morning-routine').innerHTML = formatRoutine(recommendations.morning);
+                document.getElementById('noon-routine').innerHTML = formatRoutine(recommendations.noon);
+                document.getElementById('night-routine').innerHTML = formatRoutine(recommendations.night);
+                document.getElementById('diet-recommendations').innerHTML = formatDiet(recommendations.diet);
+            } else {
+                // Generate new recommendations if none exist
+                await generateAIRecommendations(selectedDate);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('routine-modal').classList.add('hidden');
+        }
+
+        async function handleRoutineCompletion(event) {
+            const dateKey = selectedDate.toISOString().split('T')[0];
+            const isCompleted = event.target.checked;
+            
+            try {
+                // Mark day as complete
+                routineProgress[dateKey] = { completed: isCompleted };
+                localStorage.setItem('routineProgress', JSON.stringify(routineProgress));
+
+                if (isCompleted) {
+                    // Show praise modal with flower animation
+                    document.getElementById('praise-message').textContent = getRandomPraiseMessage();
+                    document.getElementById('praise-modal').classList.remove('hidden');
+                    
+                    // Find the calendar day element and add flower animation
+                    const dayElements = document.querySelectorAll('.calendar-day');
+                    const selectedDay = Array.from(dayElements).find(el => 
+                        el.textContent.trim().startsWith(selectedDate.getDate().toString())
+                    );
+                    
+                    if (selectedDay) {
+                        selectedDay.classList.add('border-pink-300', 'border-2');
+                        showFlowerAnimation(selectedDay);
+                    }
+                } else {
+                    // Remove completion styling if unchecked
+                    const dayElements = document.querySelectorAll('.calendar-day');
+                    const selectedDay = Array.from(dayElements).find(el => 
+                        el.textContent.trim().startsWith(selectedDate.getDate().toString())
+                    );
+                    
+                    if (selectedDay) {
+                        selectedDay.classList.remove('border-pink-300', 'border-2');
+                    }
+                }
+
+                // Update calendar display
+                renderCalendar();
+
+            } catch (error) {
+                console.error('Error completing routine:', error);
+                alert('Error saving progress. Please try again.');
+            }
+        }
+
+        function closePraiseModal() {
+            document.getElementById('praise-modal').classList.add('hidden');
+        }
+
+        function previousMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        }
+
+        async function generateMonthlyRoutine() {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.classList.remove('hidden');
+            const skinType = document.getElementById('skin-type').value;
+            const age = document.getElementById('age').value;
+            const concerns = [];
+            document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                concerns.push(checkbox.value);
+            });
+            const climate = document.getElementById('climate').value;
+            try {
+                // Get user profile data from form
+                
+                // Get current month's dates
+                const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+                const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+                const numDays = lastDay.getDate();
+
+                const routines = [];
+                
+                // Generate routine for each day using OpenAI
+                for (let day = 1; day <= numDays; day++) {
+                    const date = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                    const response = await fetch('http://127.0.0.1:8000/api/generate-monthly-routine', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            skinType,
+                            age,
+                            concerns,
+                            date,
+                            climate
+                        })
+                        
+                    });
+
+                    const data = await response.json();
+                    const routineText = data.routines
+                    // const routineText = data.choices[0].message.content;
+                    
+                    // Parse the routine text into sections
+                    const routine = parseRoutineText(routineText);
+                    
+                    routines.push({
+                        date: date,
+                        routine: routine
+                    });
+
+                    // Update progress
+                    const progressElement = document.getElementById('generation-progress');
+                    progressElement.textContent = `${day}/${numDays} days completed`;
+                }
+
+                // Store routines in localStorage
+                routines.forEach(item => {
+                    localStorage.setItem(`recommendations_${item.date}`, JSON.stringify(item.routine));
+                });
+
+                // Update calendar display
+                renderCalendar();
+                alert('Monthly routines generated successfully!');
+
+            } catch (error) {
+                alert('Failed to generate routines. Please try again. ${error.message}');
+                console.error('Error generating routines:', error);
+            } finally {
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        // Add this helper function to parse the AI response
+        function parseRoutineText(text) {
+            const sections = {
+                morning: [],
+                noon: [],
+                night: [],
+                diet: []
+            };
+            
+            let currentSection = null;
+            const lines = text.split('\n');
+            
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                if (!trimmedLine) continue;
+                
+                const lowerLine = trimmedLine.toLowerCase();
+                if (lowerLine.includes('morning')) {
+                    currentSection = 'morning';
+                    continue;
+                } else if (lowerLine.includes('noon')) {
+                    currentSection = 'noon';
+                    continue;
+                } else if (lowerLine.includes('night')) {
+                    currentSection = 'night';
+                    continue;
+                } else if (lowerLine.includes('diet')) {
+                    currentSection = 'diet';
+                    continue;
+                }
+                
+                if (currentSection) {
+                    // Remove numbering if present
+                    const cleanedLine = trimmedLine.replace(/^\d+\.\s*/, '');
+                    if (currentSection === 'diet') {
+                        // Parse diet recommendations into food and reason
+                        const parts = cleanedLine.split(':');
+                        if (parts.length > 1) {
+                            sections[currentSection].push({
+                                food: parts[0].trim(),
+                                reason: parts[1].trim()
+                            });
+                        } else {
+                            sections[currentSection].push({
+                                food: cleanedLine,
+                                reason: ''
+                            });
+                        }
+                    } else {
+                        sections[currentSection].push(cleanedLine);
+                    }
+                }
+            }
+            
+            return sections;
+        }
+
+        // Add this helper function if not already present
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Add function to mark day as complete
+        async function markDayComplete(dateKey, checkbox) {
+            try {
+                // Save completion status
+                routineProgress[dateKey] = { completed: checkbox.checked };
+                localStorage.setItem('routineProgress', JSON.stringify(routineProgress));
+
+                // Add visual feedback
+                const dayElement = checkbox.closest('.calendar-day');
+                if (checkbox.checked) {
+                    dayElement.classList.add('border-pink-300', 'border-2');
+                    // Show floating flower animation
+                    showFlowerAnimation(dayElement);
+                } else {
+                    dayElement.classList.remove('border-pink-300', 'border-2');
+                }
+            } catch (error) {
+                console.error('Error marking day complete:', error);
+            }
+        }
+
+        // Add flower animation function
+        function showFlowerAnimation(element) {
+            // Create multiple flowers for a more dramatic effect
+            for (let i = 0; i < 3; i++) {
+                const flower = document.createElement('div');
+                flower.innerHTML = '🌸';
+                flower.className = 'absolute text-2xl animate-float';
+                flower.style.left = `${Math.random() * 40 + 30}%`;
+                flower.style.top = '0';
+                flower.style.animationDelay = `${i * 0.2}s`; // Stagger the animations
+                element.appendChild(flower);
+                
+                setTimeout(() => flower.remove(), 1000);
+            }
+        }
+
+        const praiseMessages = [
+            "Yaaas queen! 👑 Your skin is living its best life right now. Keep slaying!",
+            "Look who's actually following their skincare routine! I'm shook! 😱",
+            "Your dedication is giving main character energy! 💫 We love that for you!",
+            "Skincare game stronger than my coffee addiction (and that's saying something) ☕",
+            "You're really out here making your skin glow-up while others are still using 3-in-1 shampoo 💅",
+            "Another day of self-care? We stan a consistent legend! 🌟",
+            "Your future self is already thanking you (and so is your skin!) 🙌",
+            "Serving face, serving dedication, serving EVERYTHING! 💖",
+            "Plot twist: you're actually becoming a skincare guru! 🧴✨",
+            "This is giving 'I have my life together' energy and I'm here for it! 🎯"
+        ];
+
+        function getRandomPraiseMessage() {
+            return praiseMessages[Math.floor(Math.random() * praiseMessages.length)];
+        }
+
+        // Initialize
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+            document.documentElement.classList.add('dark-mode');
+        }
+        updateThemeIcon();
+        renderCalendar();
+    </script>
+</body>
+</html> 
